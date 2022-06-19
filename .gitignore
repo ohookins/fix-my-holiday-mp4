@@ -55,6 +55,7 @@ build/
 main.dSYM/
 *.cmake
 CMakeCache.txt
+Makefile
 CMakeFiles/
 .vscode/
 DartConfiguration.tcl

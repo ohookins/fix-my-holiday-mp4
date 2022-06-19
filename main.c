@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <getopt.h>
 
+#include "parsefile.h"
+
 void usage()
 {
     printf("Usage: fix-my-holiday-mp4 -f FILENAME\n\n");
@@ -28,5 +30,5 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    printf("Filename was %s\n", filename);
+    parsefile(filename);
 }
