@@ -10,16 +10,17 @@
 #include "file.h"
 #include "mp4.h"
 
-void parsefile(const char *filename)
+void map_file(const char *filename, void *outMap, int *outSize)
 {
     // open(2) the file
     int fd = openfile(filename);
 
-    // mmap the file descriptor
-    void *map = mmapfile(fd);
+    // get the file size
+    int filesize = getfilesize(fd);
+    outSize = &filesize;
 
-    // start parsing the memory range for mp4 boxes
-    decodeMP4(map, getfilesize(fd));
+    // mmap the file descriptor
+    outMap = mmapfile(fd);
 }
 
 int openfile(const char *filename)
@@ -41,6 +42,7 @@ void *mmapfile(const int fd)
     // We need to know the file size in order to figure out how much memory to
     // map, otherwise we'll get EINVAL.
     int filesize = getfilesize(fd);
+    printf("File size: %d\n", filesize);
 
     // Probably won't be daring enough to make changes in place,
     // so this should stay PROT_READ for now. Actually would be a better
@@ -68,8 +70,5 @@ int getfilesize(const int fd)
         exit(EXIT_FAILURE);
     }
 
-    int filesize = (int)st.st_size;
-
-    printf("File size: %d\n", filesize);
-    return filesize;
+    return (int)st.st_size;
 }

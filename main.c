@@ -2,6 +2,7 @@
 #include <getopt.h>
 
 #include "file.h"
+#include "mp4.h"
 
 void usage()
 {
@@ -30,5 +31,11 @@ int main(const int argc, const char **argv)
         return 1;
     }
 
-    parsefile(filename);
+    // mmap the file for ease of access
+    void *map;
+    int filesize;
+    map_file(filename, &map, &filesize);
+
+    // start parsing the memory range for mp4 boxes
+    decode_mp4(map, filesize);
 }

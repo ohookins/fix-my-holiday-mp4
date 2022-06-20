@@ -1,4 +1,4 @@
-void parsefile(const char *filename);
+void map_file(const char *filename, void *outMap, int *outLength);
 
 int openfile(const char *filename);
 
