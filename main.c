@@ -32,9 +32,8 @@ int main(const int argc, const char **argv)
     }
 
     // mmap the file for ease of access
-    void *map;
     int filesize;
-    map_file(filename, &map, &filesize);
+    void *map = map_file(filename, &filesize);
 
     // start parsing the memory range for mp4 boxes
     decode_mp4(map, filesize);

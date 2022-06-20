@@ -25,4 +25,4 @@ void decode_mp4(const void *map, const int length);
 // determine the type and size of the box. Size calculation can vary.
 void decode_box(void *map);
 
-void decode_ftyp(void *map);
+void decode_ftyp(void *map, const struct Box box);

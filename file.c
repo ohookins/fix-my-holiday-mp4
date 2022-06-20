@@ -10,17 +10,16 @@
 #include "file.h"
 #include "mp4.h"
 
-void map_file(const char *filename, void *outMap, int *outSize)
+void *map_file(const char *filename, int *outSize)
 {
     // open(2) the file
     int fd = openfile(filename);
 
     // get the file size
-    int filesize = getfilesize(fd);
-    outSize = &filesize;
+    *outSize = getfilesize(fd);
 
     // mmap the file descriptor
-    outMap = mmapfile(fd);
+    return mmapfile(fd);
 }
 
 int openfile(const char *filename)

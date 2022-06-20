@@ -1,4 +1,4 @@
-void map_file(const char *filename, void *outMap, int *outLength);
+void *map_file(const char *filename, int *outLength);
 
 int openfile(const char *filename);
 

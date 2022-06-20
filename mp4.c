@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 #include "mp4.h"
 
@@ -35,6 +36,10 @@ void decode_box(void *map)
     memcpy(&boxsize, map, sizeof(boxsize));
     map += sizeof(boxsize);
 
+    // We can't actually read numbers out of the file/map properly due to endian-ness,
+    // so we fix it here. Yes this is horrible. I am committing many C sins.
+    boxsize = htonl(boxsize);
+
     // get the box type which is in the base box class
     memcpy(&box.type, (const char *)map, sizeof(box.type));
     map += sizeof(box.type);
@@ -44,6 +49,7 @@ void decode_box(void *map)
     {
         box.size_flag = EXTENDED;
         memcpy(&box.size.extended, map, sizeof(box.size.extended));
+        box.size.extended = htonll(box.size.extended);
         map += sizeof(box.size.extended);
     }
     else
@@ -53,13 +59,13 @@ void decode_box(void *map)
 
     // Start recursively parsing nested boxes, if the top-level box is allowed to
     // contain other boxes.
-    if (strcmp(box.type, "ftyp"))
+    if (strcmp(box.type, "ftyp") == 0)
     {
-        decode_ftyp(map);
+        decode_ftyp(map, box);
     }
     else
     {
-        printf("Unknown box type: [%s] %lu\n", box.type, sizeof(box.type));
+        printf("Unknown box type: [%s]\n", box.type);
     }
 
     // This box continues until the end of the file, so return.
@@ -70,7 +76,7 @@ void decode_box(void *map)
     }
 }
 
-void decode_ftyp(void *map)
+void decode_ftyp(void *map, const struct Box box)
 {
     // get the major brand
     char majorBrand[4];
@@ -81,8 +87,19 @@ void decode_ftyp(void *map)
     map += sizeof(majorBrand);
     memcpy(&minorVersion, (const char *)map, sizeof(minorVersion));
     map += sizeof(minorVersion);
-    memcpy(&additionalBrands, (const char *)map + sizeof(majorBrand) + sizeof(minorVersion), sizeof(additionalBrands));
-    map += sizeof(additionalBrands);
 
-    printf("%*s[ftyp] major brand [%.4s] minor version [%.4s] additional brands [%.4s]\n", mp4NestingLevel, "", majorBrand, minorVersion, additionalBrands);
+    printf("%*s[ftyp] size [%u] major brand [%.4s] minor version [%.4s] additional brands [", mp4NestingLevel, "", box.size.compact, majorBrand, minorVersion);
+
+    // Additional brands are from here until the end of the box.
+    // Have to remove 8 for the size field itself and the type field.
+    u_int32_t remainingLength = box.size.compact - 8 - sizeof(majorBrand) - sizeof(minorVersion);
+
+    while (remainingLength > 0)
+    {
+        memcpy(&additionalBrands, (const char *)map, sizeof(additionalBrands));
+        map += sizeof(additionalBrands);
+        remainingLength -= sizeof(additionalBrands);
+        printf("%.4s,", additionalBrands);
+    }
+    printf("\b]\n");
 }
