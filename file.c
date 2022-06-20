@@ -7,7 +7,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include "parsefile.h"
+#include "file.h"
+#include "mp4.h"
 
 void parsefile(const char *filename)
 {
@@ -18,6 +19,7 @@ void parsefile(const char *filename)
     void *map = mmapfile(fd);
 
     // start parsing the memory range for mp4 boxes
+    decodeMP4(map, getfilesize(fd));
 }
 
 int openfile(const char *filename)

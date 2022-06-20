@@ -6,5 +6,5 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
 # Linking
-set(SOURCE main.c parsefile.c mp4.c)
+set(SOURCE main.c file.c mp4.c)
 add_executable(${PROJECT_NAME} ${SOURCE})

@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <getopt.h>
 
-#include "parsefile.h"
+#include "file.h"
 
 void usage()
 {
     printf("Usage: fix-my-holiday-mp4 -f FILENAME\n\n");
 }
 
-int main(int argc, char **argv)
+int main(const int argc, const char **argv)
 {
     // Parse command-line arguments
     char *filename;
