@@ -63,8 +63,8 @@ int decode_box(void *map)
         box.size.compact = boxsize;
     }
 
-    // Start recursively parsing nested boxes, if the top-level box is allowed to
-    // contain other boxes.
+    // Parse each box type based on the type field we parsed. There's probably a
+    // much better way of doing this with some kind of function pointer table.
     if (strcmp(box.type, "ftyp") == 0)
     {
         decode_ftyp(map, box);
@@ -72,6 +72,22 @@ int decode_box(void *map)
     else if (strcmp(box.type, "mdat") == 0)
     {
         decode_mdat(map, box);
+    }
+    else if (strcmp(box.type, "moov") == 0)
+    {
+        decode_moov(map, box);
+    }
+    else if (strcmp(box.type, "mvhd") == 0)
+    {
+        decode_mvhd(map, box);
+    }
+    else if (strcmp(box.type, "udta") == 0)
+    {
+        decode_udta(map, box);
+    }
+    else if (strcmp(box.type, "trak") == 0)
+    {
+        decode_trak(map, box);
     }
     else
     {
@@ -120,4 +136,36 @@ void decode_mdat(void *map, const struct Box box)
 {
     // not much to this box, it's just audio/video data
     printf("%*s[mdat] size [%u]\n", mp4NestingLevel, "", box.size.compact);
+}
+
+void decode_moov(void *map, const struct Box box)
+{
+    printf("%*s[moov] size [%u]\n", mp4NestingLevel, "", box.size.compact);
+
+    // this box is potentially nested
+    mp4NestingLevel += 2;
+
+    void *current = map;
+    while (current < map + box.size.compact)
+    {
+        int parsed_bytes = decode_box(current);
+        current += parsed_bytes;
+    }
+
+    mp4NestingLevel -= 2;
+}
+
+void decode_mvhd(void *map, const struct Box box)
+{
+    printf("%*s[mvdh] size [%u]\n", mp4NestingLevel, "", box.size.compact);
+}
+
+void decode_udta(void *map, const struct Box box)
+{
+    printf("%*s[udta] size [%u]\n", mp4NestingLevel, "", box.size.compact);
+}
+
+void decode_trak(void *map, const struct Box box)
+{
+    printf("%*s[trak] size [%u]\n", mp4NestingLevel, "", box.size.compact);
 }

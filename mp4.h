@@ -31,3 +31,11 @@ int decode_box(void *map);
 void decode_ftyp(void *map, const struct Box box);
 
 void decode_mdat(void *map, const struct Box box);
+
+void decode_moov(void *map, const struct Box box);
+
+void decode_mvhd(void *map, const struct Box box);
+
+void decode_udta(void *map, const struct Box box);
+
+void decode_trak(void *map, const struct Box box);
