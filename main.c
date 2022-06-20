@@ -9,7 +9,7 @@ void usage()
     printf("Usage: fix-my-holiday-mp4 -f FILENAME\n\n");
 }
 
-int main(const int argc, const char **argv)
+int main(const int argc, char **argv)
 {
     // Parse command-line arguments
     char *filename;
@@ -33,8 +33,12 @@ int main(const int argc, const char **argv)
 
     // mmap the file for ease of access
     int filesize;
-    void *map = map_file(filename, &filesize);
+    int fd;
+    void *map = map_file(filename, &filesize, &fd);
 
     // start parsing the memory range for mp4 boxes
     decode_mp4(map, filesize);
+
+    // cleanup, assuming we didn't exit unexpectedly
+    cleanup(map, filesize, fd);
 }

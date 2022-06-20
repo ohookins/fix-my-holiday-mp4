@@ -14,15 +14,19 @@ void decode_mp4(const void *map, const int length)
     // FIXME: Hard-coded literal value
     while (current < map + length)
     {
-        // Get the box type and size
-        decode_box(current);
+        // Decode the base box, and delegate further to more specific box types.
+        // Nested boxes are handled by recursing.
+        int parsed_bytes = decode_box(current);
+        current += parsed_bytes;
 
         // determine whether we need to recurse into this box or not
         // TODO
     }
+
+    printf("\nFinished reading file\n");
 }
 
-void decode_box(void *map)
+int decode_box(void *map)
 {
     // it's mainly useful to have a structure to store the base metadata in due to
     // the union and optional fields.
@@ -44,7 +48,9 @@ void decode_box(void *map)
     memcpy(&box.type, (const char *)map, sizeof(box.type));
     map += sizeof(box.type);
 
-    // next field is optionally largesize, if the first field was set to 1.
+    // Next field is optionally largesize, if the first field was set to 1.
+    // in practice, I'm not bothering to check for this anywhere else, so it
+    // should probably be removed.
     if (boxsize == 1)
     {
         box.size_flag = EXTENDED;
@@ -63,6 +69,10 @@ void decode_box(void *map)
     {
         decode_ftyp(map, box);
     }
+    else if (strcmp(box.type, "mdat") == 0)
+    {
+        decode_mdat(map, box);
+    }
     else
     {
         printf("Unknown box type: [%s]\n", box.type);
@@ -72,8 +82,10 @@ void decode_box(void *map)
     // We'll decode inner boxes recursively.
     if (boxsize == 0)
     {
-        return;
+        return 0;
     }
+
+    return boxsize;
 }
 
 void decode_ftyp(void *map, const struct Box box)
@@ -102,4 +114,10 @@ void decode_ftyp(void *map, const struct Box box)
         printf("%.4s,", additionalBrands);
     }
     printf("\b]\n");
+}
+
+void decode_mdat(void *map, const struct Box box)
+{
+    // not much to this box, it's just audio/video data
+    printf("%*s[mdat] size [%u]\n", mp4NestingLevel, "", box.size.compact);
 }
