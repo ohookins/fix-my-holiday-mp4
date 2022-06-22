@@ -145,8 +145,15 @@ void decode_moov(void *map, const struct Box box)
     // this box is potentially nested
     mp4NestingLevel += 2;
 
+    // save the current position in the map and walk ahead until the end of the box
     void *current = map;
-    while (current < map + box.size.compact)
+
+    // the end of the box is the current position + the size, minus the size of the
+    // size field and the size of the type field, which have already been read
+    // in the calling function, and are included in the overall box size
+    void *end_of_box = map + box.size.compact - sizeof(box.type) - sizeof(box.size.compact);
+
+    while (current < end_of_box)
     {
         int parsed_bytes = decode_box(current);
         current += parsed_bytes;
