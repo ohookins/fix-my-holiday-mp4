@@ -75,7 +75,7 @@ int decode_box(void *map)
     }
     else if (strcmp(box.type, "moov") == 0)
     {
-        decode_moov(map, box);
+        decode_nested_box(map, box);
     }
     else if (strcmp(box.type, "mvhd") == 0)
     {
@@ -83,11 +83,11 @@ int decode_box(void *map)
     }
     else if (strcmp(box.type, "udta") == 0)
     {
-        decode_udta(map, box);
+        decode_nested_box(map, box);
     }
     else if (strcmp(box.type, "trak") == 0)
     {
-        decode_trak(map, box);
+        decode_nested_box(map, box);
     }
     else
     {
@@ -138,11 +138,54 @@ void decode_mdat(void *map, const struct Box box)
     printf("%*s[mdat] size [%u]\n", mp4NestingLevel, "", box.size.compact);
 }
 
-void decode_moov(void *map, const struct Box box)
+void decode_mvhd(void *map, const struct Box box)
 {
-    printf("%*s[moov] size [%u]\n", mp4NestingLevel, "", box.size.compact);
+    int version;
+    memcpy(&version, map, sizeof(version));
+    map += sizeof(version);
 
-    // this box is potentially nested
+    // couldn't be bothered supporting version 1
+    if (version != 0)
+    {
+        printf("%*s[mvdh] size [%u] version [%d]\n", mp4NestingLevel, "", box.size.compact, version);
+        return;
+    }
+
+    u_int32_t creation_time;
+    memcpy(&creation_time, map, sizeof(creation_time));
+    map += sizeof(creation_time);
+
+    u_int32_t mod_time;
+    memcpy(&mod_time, map, sizeof(mod_time));
+    map += sizeof(mod_time);
+
+    uint32_t timescale;
+    memcpy(&timescale, map, sizeof(timescale));
+    map += sizeof(timescale);
+
+    uint32_t duration;
+    memcpy(&duration, map, sizeof(duration));
+    map += sizeof(duration);
+
+    int32_t rate;
+    memcpy(&rate, map, sizeof(rate));
+    map += sizeof(rate);
+
+    int16_t volume;
+    memcpy(&volume, map, sizeof(volume));
+    map += sizeof(volume);
+
+    // there are more fields, but they aren't very interesting
+
+    printf("%*s[mvdh] size [%u] version [%d] creation [%d] modified [%d] timescale [%d] duration [%d] rate [%#x] volume [%#x]\n",
+           mp4NestingLevel, "", box.size.compact, version, creation_time, mod_time, timescale, duration, rate, volume);
+}
+
+void decode_nested_box(void *map, const struct Box box)
+{
+    printf("%*s[%s] size [%u]\n", mp4NestingLevel, "", box.type, box.size.compact);
+
+    // this box is nested
     mp4NestingLevel += 2;
 
     // save the current position in the map and walk ahead until the end of the box
@@ -160,19 +203,4 @@ void decode_moov(void *map, const struct Box box)
     }
 
     mp4NestingLevel -= 2;
-}
-
-void decode_mvhd(void *map, const struct Box box)
-{
-    printf("%*s[mvdh] size [%u]\n", mp4NestingLevel, "", box.size.compact);
-}
-
-void decode_udta(void *map, const struct Box box)
-{
-    printf("%*s[udta] size [%u]\n", mp4NestingLevel, "", box.size.compact);
-}
-
-void decode_trak(void *map, const struct Box box)
-{
-    printf("%*s[trak] size [%u]\n", mp4NestingLevel, "", box.size.compact);
 }

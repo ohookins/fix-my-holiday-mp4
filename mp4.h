@@ -27,15 +27,14 @@ void decode_mp4(const void *map, const int length);
 // to progress the mmap pointer.
 int decode_box(void *map);
 
+// it turns out that boxes that are just containers for other boxes all look the
+// same, so we can just use the same function for them
+void decode_nested_box(void *map, const struct Box box);
+
 // Following functions handle the different kind of mp4 boxes that might be found.
+// These are "leaf" boxes without further nesting.
 void decode_ftyp(void *map, const struct Box box);
 
 void decode_mdat(void *map, const struct Box box);
 
-void decode_moov(void *map, const struct Box box);
-
 void decode_mvhd(void *map, const struct Box box);
-
-void decode_udta(void *map, const struct Box box);
-
-void decode_trak(void *map, const struct Box box);
