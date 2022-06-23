@@ -73,3 +73,4 @@ void decode_tkhd(void *map, const struct BaseBox box);
 
 // decode a timestamp - these are in seconds since midnight, Jan 1, 1904
 // so convenient!
+char *translate_timestamp(const u_int32_t timestamp);

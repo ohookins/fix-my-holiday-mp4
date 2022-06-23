@@ -2,10 +2,14 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "mp4.h"
 
 int mp4NestingLevel = 0;
+
+// oh lord, forgive me for this global variable
+u_int32_t timescale;
 
 void decode_mp4(const void *map, const int length)
 {
@@ -151,10 +155,13 @@ void decode_mvhd(void *map, const struct BaseBox box)
     // fix the number endianness
     mvhdBox.creation_time = htonl(mvhdBox.creation_time);
     mvhdBox.mod_time = htonl(mvhdBox.mod_time);
-    mvhdBox.timescale = htonl(mvhdBox.timescale);
+    mvhdBox.timescale = htonl(mvhdBox.timescale); // units per second
     mvhdBox.duration = htonl(mvhdBox.duration);
     mvhdBox.rate = htonl(mvhdBox.rate);
     mvhdBox.volume = htons(mvhdBox.volume);
+
+    // I'm lazy, so set a global for this as it's handy to decode other boxes
+    timescale = mvhdBox.timescale;
 
     // there are more fields, but they aren't very interesting
 
@@ -165,9 +172,9 @@ void decode_mvhd(void *map, const struct BaseBox box)
         return;
     }
 
-    printf("%*s[mvdh] size [%u] version [%u] flags [%#x] creation [%u] modified [%u] timescale [%u] duration [%u] rate [%#x] volume [%#x]\n",
-           mp4NestingLevel, "", box.size, mvhdBox.version, mvhdBox.flags, mvhdBox.creation_time, mvhdBox.mod_time, mvhdBox.timescale,
-           mvhdBox.duration, mvhdBox.rate, mvhdBox.volume);
+    printf("%*s[mvdh] size [%u] version [%u] flags [%#x] creation [%.24s] modified [%.24s] timescale [%u/sec] duration [%fs] rate [%#x] volume [%#x]\n",
+           mp4NestingLevel, "", box.size, mvhdBox.version, mvhdBox.flags, translate_timestamp(mvhdBox.creation_time),
+           translate_timestamp(mvhdBox.mod_time), mvhdBox.timescale, (double)mvhdBox.duration / mvhdBox.timescale, mvhdBox.rate, mvhdBox.volume);
 }
 
 void decode_tkhd(void *map, const struct BaseBox box)
@@ -182,8 +189,12 @@ void decode_tkhd(void *map, const struct BaseBox box)
     tkhdBox.mod_time = htonl(tkhdBox.mod_time);
     tkhdBox.track_id = htonl(tkhdBox.track_id);
     tkhdBox.duration = htonl(tkhdBox.duration);
-    tkhdBox.width = htonl(tkhdBox.width);
-    tkhdBox.height = htonl(tkhdBox.height);
+
+    // MP4 docs are unclear on this, but one page mentions that width and height
+    // are "fixed-point 16.16" fields. The high bytes seemed to contain something
+    // reasonable, and the low bytes were all zero, so shift them.
+    tkhdBox.width = htonl(tkhdBox.width) >> 16;
+    tkhdBox.height = htonl(tkhdBox.height) >> 16;
 
     // couldn't be bothered supporting version 1
     if (tkhdBox.version == 1)
@@ -192,7 +203,16 @@ void decode_tkhd(void *map, const struct BaseBox box)
         return;
     }
 
-    printf("%*s[tkhd] size [%u] version [%u] flags [%#x] creation [%u] modified [%u] track [%u] duration [%u] width [%u] height [%u]\n",
-           mp4NestingLevel, "", box.size, tkhdBox.version, tkhdBox.flags, tkhdBox.creation_time, tkhdBox.mod_time, tkhdBox.track_id,
-           tkhdBox.duration, tkhdBox.width, tkhdBox.height);
+    printf("%*s[tkhd] size [%u] version [%u] flags [%#x] creation [%.24s] modified [%.24s] track [%u] duration [%fs] width [%u] height [%u]\n",
+           mp4NestingLevel, "", box.size, tkhdBox.version, tkhdBox.flags, translate_timestamp(tkhdBox.creation_time),
+           translate_timestamp(tkhdBox.mod_time), tkhdBox.track_id, (double)tkhdBox.duration / timescale, tkhdBox.width, tkhdBox.height);
+}
+
+// yes, I'm exceedingly lazy
+const u_int32_t seconds_1904_to_1970 = 2082844800;
+
+char *translate_timestamp(const u_int32_t timestamp)
+{
+    time_t time = (time_t)timestamp - seconds_1904_to_1970;
+    return ctime(&time);
 }
