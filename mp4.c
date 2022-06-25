@@ -11,8 +11,36 @@ int mp4NestingLevel = 0;
 // oh lord, forgive me for this global variable
 u_int32_t timescale;
 
+// homebrewed function pointer
+struct PointerTableEntry *function_pointer_table;
+const int num_box_types = 8;
+
+void *get_decode_function_for_box_type(const struct BaseBox box)
+{
+    for (int i = 0; i < num_box_types; i++)
+    {
+        if (strncmp(box.type, function_pointer_table[i].name, sizeof(box.type)) == 0)
+        {
+            return function_pointer_table[i].function;
+        }
+    }
+
+    return unknown_box_type;
+}
+
 void decode_mp4(const void *map, const int length)
 {
+    // construct the function pointer table
+    function_pointer_table = malloc(sizeof(struct PointerTableEntry) * num_box_types);
+    function_pointer_table[0] = (struct PointerTableEntry){"ftyp", &decode_ftyp};
+    function_pointer_table[1] = (struct PointerTableEntry){"mdat", &decode_mdat};
+    function_pointer_table[2] = (struct PointerTableEntry){"moov", &decode_nested_box};
+    function_pointer_table[3] = (struct PointerTableEntry){"mvhd", &decode_mvhd};
+    function_pointer_table[4] = (struct PointerTableEntry){"udta", &decode_nested_box};
+    function_pointer_table[5] = (struct PointerTableEntry){"trak", &decode_nested_box};
+    function_pointer_table[6] = (struct PointerTableEntry){"mdia", &decode_nested_box};
+    function_pointer_table[7] = (struct PointerTableEntry){"tkhd", &decode_tkhd};
+
     void *current = (void *)map;
 
     // Need to be able to read the whole box header at least
@@ -47,40 +75,9 @@ int decode_box(void *map)
         exit(EXIT_FAILURE);
     }
 
-    // Parse each box type based on the type field we parsed. There's probably a
-    // much better way of doing this with some kind of function pointer table.
-    if (strncmp(box.type, "ftyp", sizeof(box.type)) == 0)
-    {
-        decode_ftyp(map, box);
-    }
-    else if (strncmp(box.type, "mdat", sizeof(box.type)) == 0)
-    {
-        decode_mdat(map, box);
-    }
-    else if (strncmp(box.type, "moov", sizeof(box.type)) == 0)
-    {
-        decode_nested_box(map, box);
-    }
-    else if (strncmp(box.type, "mvhd", sizeof(box.type)) == 0)
-    {
-        decode_mvhd(map, box);
-    }
-    else if (strncmp(box.type, "udta", sizeof(box.type)) == 0)
-    {
-        decode_nested_box(map, box);
-    }
-    else if (strncmp(box.type, "trak", sizeof(box.type)) == 0)
-    {
-        decode_nested_box(map, box);
-    }
-    else if (strncmp(box.type, "tkhd", sizeof(box.type)) == 0)
-    {
-        decode_tkhd(map, box);
-    }
-    else
-    {
-        printf("%*s[%.4s] size [%d] - unknown box type\n", mp4NestingLevel, "", box.type, box.size);
-    }
+    // Delegate further parsing of boxes to the relevant function
+    void (*decode_function)(void *, const struct BaseBox) = get_decode_function_for_box_type(box);
+    (*decode_function)(map, box);
 
     // This box continues until the end of the file, so return.
     // We'll decode inner boxes recursively.
@@ -215,4 +212,9 @@ char *translate_timestamp(const u_int32_t timestamp)
 {
     time_t time = (time_t)timestamp - seconds_1904_to_1970;
     return ctime(&time);
+}
+
+void unknown_box_type(void *map, const struct BaseBox box)
+{
+    printf("%*s[%.4s] size [%d] - unknown box type\n", mp4NestingLevel, "", box.type, box.size);
 }

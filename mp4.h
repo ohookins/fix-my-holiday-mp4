@@ -10,6 +10,13 @@ struct BaseBox
     char type[4];
 };
 
+// For making a function pointer table. There are probably better ways to do this.
+struct PointerTableEntry
+{
+    char name[4];
+    void (*function)(void *, const struct BaseBox);
+};
+
 // ftyp always has a variable length, these are the only two guaranteed fields
 struct FtypBox
 {
@@ -48,6 +55,8 @@ struct TkhdBox
     u_int32_t height;
 };
 
+void *get_decode_function_for_box_type(const struct BaseBox box);
+
 // decode_mp4 starts the overall process of decoding the MP4 file.
 void decode_mp4(const void *map, const int length);
 
@@ -74,3 +83,5 @@ void decode_tkhd(void *map, const struct BaseBox box);
 // decode a timestamp - these are in seconds since midnight, Jan 1, 1904
 // so convenient!
 char *translate_timestamp(const u_int32_t timestamp);
+
+void unknown_box_type(void *map, const struct BaseBox box);
