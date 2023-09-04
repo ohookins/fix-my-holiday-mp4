@@ -55,7 +55,37 @@ struct TkhdBox
     u_int32_t height;
 };
 
-void *get_decode_function_for_box_type(const struct BaseBox box);
+struct MdhdBox
+{
+    u_int8_t version;
+    unsigned int flags : 24;
+    u_int32_t creation_time;
+    u_int32_t mod_time;
+    u_int32_t timescale;
+    u_int32_t duration;
+    unsigned int padding : 1;
+
+    // declares the language code for this media. See ISO 639-2/T for the set of three character
+    // codes. Each character is packed as the difference between its ASCII value and 0x60. Since the code
+    // is confined to being three lower-case letters, these values are strictly positive.
+    // unsigned int(5)[3] language; // ISO-639-2/T language code
+    // I can't figure out how to make the above specification work in C so I'm leaving it for now.
+    unsigned int languages : 15;
+    u_int16_t pre_defined;
+};
+
+struct HdlrBox
+{
+    u_int8_t version;
+    unsigned int flags : 24;
+    u_int32_t pre_defined;
+    u_int32_t handler_type;
+    u_int32_t reserved[3];
+    char *name;
+};
+
+void *
+get_decode_function_for_box_type(const struct BaseBox box);
 
 // decode_mp4 starts the overall process of decoding the MP4 file.
 void decode_mp4(const void *map, const int length);
@@ -79,6 +109,8 @@ void decode_mdat(void *map, const struct BaseBox box);
 void decode_mvhd(void *map, const struct BaseBox box);
 
 void decode_tkhd(void *map, const struct BaseBox box);
+
+void decode_mdhd(void *map, const struct BaseBox box);
 
 // decode a timestamp - these are in seconds since midnight, Jan 1, 1904
 // so convenient!

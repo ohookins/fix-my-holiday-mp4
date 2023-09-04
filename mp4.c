@@ -13,7 +13,7 @@ u_int32_t timescale;
 
 // homebrewed function pointer
 struct PointerTableEntry *function_pointer_table;
-const int num_box_types = 8;
+const int num_box_types = 9;
 
 void *get_decode_function_for_box_type(const struct BaseBox box)
 {
@@ -40,6 +40,7 @@ void decode_mp4(const void *map, const int length)
     function_pointer_table[5] = (struct PointerTableEntry){"trak", &decode_nested_box};
     function_pointer_table[6] = (struct PointerTableEntry){"mdia", &decode_nested_box};
     function_pointer_table[7] = (struct PointerTableEntry){"tkhd", &decode_tkhd};
+    function_pointer_table[8] = (struct PointerTableEntry){"mdhd", &decode_mdhd};
 
     void *current = (void *)map;
 
@@ -203,6 +204,25 @@ void decode_tkhd(void *map, const struct BaseBox box)
     printf("%*s[tkhd] size [%u] version [%u] flags [%#x] creation [%.24s] modified [%.24s] track [%u] duration [%fs] width [%u] height [%u]\n",
            mp4NestingLevel, "", box.size, tkhdBox.version, tkhdBox.flags, translate_timestamp(tkhdBox.creation_time),
            translate_timestamp(tkhdBox.mod_time), tkhdBox.track_id, (double)tkhdBox.duration / timescale, tkhdBox.width, tkhdBox.height);
+}
+
+void decode_mdhd(void *map, const struct BaseBox box)
+{
+    struct MdhdBox mdhdBox;
+    memcpy(&mdhdBox, map, sizeof(mdhdBox));
+
+    // fix the number endianness
+    mdhdBox.version = htonl(mdhdBox.version);
+    mdhdBox.creation_time = htonl(mdhdBox.creation_time);
+    mdhdBox.mod_time = htonl(mdhdBox.mod_time);
+    mdhdBox.timescale = htonl(mdhdBox.timescale);
+    mdhdBox.duration = htonl(mdhdBox.duration);
+
+    // not even going to check for version 1 here
+
+    printf("%*s[mdhd] size [%u] version [%u] flags [%#x] creation [%.24s] modified [%.24s] timescale [%u/sec] duration [%fs]\n",
+           mp4NestingLevel, "", box.size, mdhdBox.version, mdhdBox.flags, translate_timestamp(mdhdBox.creation_time),
+           translate_timestamp(mdhdBox.mod_time), mdhdBox.timescale, (double)mdhdBox.duration / mdhdBox.timescale);
 }
 
 // yes, I'm exceedingly lazy
