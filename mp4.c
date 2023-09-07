@@ -13,7 +13,7 @@ u_int32_t timescale;
 
 // homebrewed function pointer
 struct PointerTableEntry *function_pointer_table;
-const int num_box_types = 9;
+const int num_box_types = 10;
 
 void *get_decode_function_for_box_type(const struct BaseBox box)
 {
@@ -41,6 +41,7 @@ void decode_mp4(const void *map, const int length)
     function_pointer_table[6] = (struct PointerTableEntry){"mdia", &decode_nested_box};
     function_pointer_table[7] = (struct PointerTableEntry){"tkhd", &decode_tkhd};
     function_pointer_table[8] = (struct PointerTableEntry){"mdhd", &decode_mdhd};
+    function_pointer_table[9] = (struct PointerTableEntry){"hdlr", &decode_hdlr};
 
     void *current = (void *)map;
 
@@ -223,6 +224,23 @@ void decode_mdhd(void *map, const struct BaseBox box)
     printf("%*s[mdhd] size [%u] version [%u] flags [%#x] creation [%.24s] modified [%.24s] timescale [%u/sec] duration [%fs]\n",
            mp4NestingLevel, "", box.size, mdhdBox.version, mdhdBox.flags, translate_timestamp(mdhdBox.creation_time),
            translate_timestamp(mdhdBox.mod_time), mdhdBox.timescale, (double)mdhdBox.duration / mdhdBox.timescale);
+}
+
+void decode_hdlr(void *map, const struct BaseBox box)
+{
+    struct HdlrBox hdlrBox;
+    memcpy(&hdlrBox, map, sizeof(hdlrBox));
+
+    // Read the name field
+    size_t name_len = box.size - sizeof(hdlrBox);
+    char name[name_len];
+    memcpy(&name, map + sizeof(hdlrBox), sizeof(name));
+
+    // fix the number endianness
+    hdlrBox.version = htonl(hdlrBox.version);
+
+    printf("%*s[hdlr] size [%u] version [%u] flags [%#x] handler type [%s] name [%s]\n",
+           mp4NestingLevel, "", box.size, hdlrBox.version, hdlrBox.flags, hdlrBox.handler_type, name);
 }
 
 // yes, I'm exceedingly lazy

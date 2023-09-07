@@ -79,9 +79,12 @@ struct HdlrBox
     u_int8_t version;
     unsigned int flags : 24;
     u_int32_t pre_defined;
-    u_int32_t handler_type;
+    char handler_type[4]; // u_int32_t in the specification but it's actually a four-character handler type code
     u_int32_t reserved[3];
-    char *name;
+
+    // name is a null-terminated string of variable length, so it's not useful
+    // to have as a pointer in this struct
+    // char *name;
 };
 
 void *
@@ -111,6 +114,8 @@ void decode_mvhd(void *map, const struct BaseBox box);
 void decode_tkhd(void *map, const struct BaseBox box);
 
 void decode_mdhd(void *map, const struct BaseBox box);
+
+void decode_hdlr(void *map, const struct BaseBox box);
 
 // decode a timestamp - these are in seconds since midnight, Jan 1, 1904
 // so convenient!
