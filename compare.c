@@ -28,7 +28,7 @@ static void print_box_metadata(const char *type, const void *data, int size) {
 }
 
 // Recursively collect all boxes (with hierarchy path)
-static int collect_boxes(const void *map, int filesize, BoxPath *out_boxes, int max_boxes, const char *parent_path) {
+int collect_boxes(const void *map, int filesize, BoxPath *out_boxes, int max_boxes, const char *parent_path) {
     int count = 0;
     int offset = 0;
     void *current = (void *)map;

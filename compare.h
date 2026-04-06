@@ -9,4 +9,6 @@ typedef struct { char path[128]; char type[4]; int offset; int size; } BoxPath;
 // Analyze missing boxes between two MP4 files
 void analyze_missing_boxes(const char *target_filename, const char *reference_filename);
 
+int collect_boxes(const void *map, int filesize, BoxPath *out_boxes, int max_boxes, const char *parent_path);
+
 #endif // COMPARE_H
