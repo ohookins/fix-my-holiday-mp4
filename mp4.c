@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include "mp4.h"
 
+static void print_box_hex(const void *data, size_t len);
+
 int mp4NestingLevel = 0;
 
 // oh lord, forgive me for this global variable
@@ -14,7 +16,7 @@ uint32_t timescale;
 
 // homebrewed function pointer
 struct PointerTableEntry *function_pointer_table;
-const int num_box_types = 14;
+const int num_box_types = 18;
 
 void *get_decode_function_for_box_type(const struct BaseBox box)
 {
@@ -47,6 +49,10 @@ void decode_mp4(const void *map, const int length)
     function_pointer_table[11] = (struct PointerTableEntry){"smrd", &decode_smrd};
     function_pointer_table[12] = (struct PointerTableEntry){"smta", &decode_smta};
     function_pointer_table[13] = (struct PointerTableEntry){"minf", &decode_minf};
+    function_pointer_table[14] = (struct PointerTableEntry){"vmhd", &decode_vmhd};
+    function_pointer_table[15] = (struct PointerTableEntry){"dinf", &decode_dinf};
+    function_pointer_table[16] = (struct PointerTableEntry){"stbl", &decode_stbl};
+    function_pointer_table[17] = (struct PointerTableEntry){"smhd", &decode_smhd};
 
     void *current = (void *)map;
 
@@ -63,6 +69,22 @@ void decode_mp4(const void *map, const int length)
     printf("\nFinished reading file\n");
 }
 
+void decode_vmhd(void *map, const struct BaseBox box) {
+    printf("%*s[vmhd] size [%u] data: %u bytes\n", mp4NestingLevel, "", box.size, box.size - 8);
+}
+
+void decode_dinf(void *map, const struct BaseBox box) {
+    printf("%*s[dinf] size [%u] data: %u bytes\n", mp4NestingLevel, "", box.size, box.size - 8);
+}
+
+void decode_stbl(void *map, const struct BaseBox box) {
+    printf("%*s[stbl] size [%u] data: %u bytes\n", mp4NestingLevel, "", box.size, box.size - 8);
+}
+
+void decode_smhd(void *map, const struct BaseBox box) {
+    printf("%*s[smhd] size [%u] data: %u bytes\n", mp4NestingLevel, "", box.size, box.size - 8);
+}
+
 // Print the contents of a box as hex for debugging
 static void print_box_hex(const void *data, size_t len) {
     const unsigned char *bytes = (const unsigned char *)data;
@@ -73,19 +95,17 @@ static void print_box_hex(const void *data, size_t len) {
     if (len % 16 != 0) printf("\n");
 }
 
+
 void decode_sdln(void *map, const struct BaseBox box) {
-    printf("%*s[SDLN] size [%u] data (hex):\n", mp4NestingLevel, "", box.size);
-    print_box_hex(map, box.size - 8);
+    printf("%*s[SDLN] size [%u] data: %u bytes\n", mp4NestingLevel, "", box.size, box.size - 8);
 }
 
 void decode_smrd(void *map, const struct BaseBox box) {
-    printf("%*s[smrd] size [%u] data (hex):\n", mp4NestingLevel, "", box.size);
-    print_box_hex(map, box.size - 8);
+    printf("%*s[smrd] size [%u] data: %u bytes\n", mp4NestingLevel, "", box.size, box.size - 8);
 }
 
 void decode_smta(void *map, const struct BaseBox box) {
-    printf("%*s[smta] size [%u] data (hex):\n", mp4NestingLevel, "", box.size);
-    print_box_hex(map, box.size - 8);
+    printf("%*s[smta] size [%u] data: %u bytes\n", mp4NestingLevel, "", box.size, box.size - 8);
 }
 
 void decode_minf(void *map, const struct BaseBox box) {

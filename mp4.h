@@ -1,17 +1,21 @@
+
 #ifndef MP4_H
 #define MP4_H
 
+#include <stdbool.h>
+#include <stdint.h>
+
 // Forward declaration for use in function prototypes
 struct BaseBox;
-// Parse SDLN, smrd, smta, and minf boxes
+// Parse SDLN, smrd, smta, minf, vmhd, dinf, stbl, smhd boxes
 void decode_sdln(void *map, const struct BaseBox box);
 void decode_smrd(void *map, const struct BaseBox box);
 void decode_smta(void *map, const struct BaseBox box);
 void decode_minf(void *map, const struct BaseBox box);
-
-// ...existing code...
-#include <stdbool.h>
-#include <stdint.h>
+void decode_vmhd(void *map, const struct BaseBox box);
+void decode_dinf(void *map, const struct BaseBox box);
+void decode_stbl(void *map, const struct BaseBox box);
+void decode_smhd(void *map, const struct BaseBox box);
 
 
 // Struct definitions for the box types I'm interested in.
