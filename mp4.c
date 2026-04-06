@@ -14,7 +14,7 @@ uint32_t timescale;
 
 // homebrewed function pointer
 struct PointerTableEntry *function_pointer_table;
-const int num_box_types = 10;
+const int num_box_types = 14;
 
 void *get_decode_function_for_box_type(const struct BaseBox box)
 {
@@ -43,6 +43,10 @@ void decode_mp4(const void *map, const int length)
     function_pointer_table[7] = (struct PointerTableEntry){"tkhd", &decode_tkhd};
     function_pointer_table[8] = (struct PointerTableEntry){"mdhd", &decode_mdhd};
     function_pointer_table[9] = (struct PointerTableEntry){"hdlr", &decode_hdlr};
+    function_pointer_table[10] = (struct PointerTableEntry){"SDLN", &decode_sdln};
+    function_pointer_table[11] = (struct PointerTableEntry){"smrd", &decode_smrd};
+    function_pointer_table[12] = (struct PointerTableEntry){"smta", &decode_smta};
+    function_pointer_table[13] = (struct PointerTableEntry){"minf", &decode_minf};
 
     void *current = (void *)map;
 
@@ -57,6 +61,45 @@ void decode_mp4(const void *map, const int length)
     }
 
     printf("\nFinished reading file\n");
+}
+
+// Print the contents of a box as hex for debugging
+static void print_box_hex(const void *data, size_t len) {
+    const unsigned char *bytes = (const unsigned char *)data;
+    for (size_t i = 0; i < len; ++i) {
+        printf("%02x ", bytes[i]);
+        if ((i + 1) % 16 == 0) printf("\n");
+    }
+    if (len % 16 != 0) printf("\n");
+}
+
+void decode_sdln(void *map, const struct BaseBox box) {
+    printf("%*s[SDLN] size [%u] data (hex):\n", mp4NestingLevel, "", box.size);
+    print_box_hex(map, box.size - 8);
+}
+
+void decode_smrd(void *map, const struct BaseBox box) {
+    printf("%*s[smrd] size [%u] data (hex):\n", mp4NestingLevel, "", box.size);
+    print_box_hex(map, box.size - 8);
+}
+
+void decode_smta(void *map, const struct BaseBox box) {
+    printf("%*s[smta] size [%u] data (hex):\n", mp4NestingLevel, "", box.size);
+    print_box_hex(map, box.size - 8);
+}
+
+void decode_minf(void *map, const struct BaseBox box) {
+    printf("%*s[minf] size [%u] (container)\n", mp4NestingLevel, "", box.size);
+    // Recursively parse child boxes
+    mp4NestingLevel += 2;
+    void *current = map;
+    void *end_of_box = map + box.size - 8;
+    while (current < end_of_box) {
+        int parsed_bytes = decode_box(current);
+        current += parsed_bytes;
+    }
+
+    mp4NestingLevel -= 2;
 }
 
 int decode_box(void *map)

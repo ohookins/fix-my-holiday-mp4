@@ -1,6 +1,18 @@
+#ifndef MP4_H
+#define MP4_H
 
+// Forward declaration for use in function prototypes
+struct BaseBox;
+// Parse SDLN, smrd, smta, and minf boxes
+void decode_sdln(void *map, const struct BaseBox box);
+void decode_smrd(void *map, const struct BaseBox box);
+void decode_smta(void *map, const struct BaseBox box);
+void decode_minf(void *map, const struct BaseBox box);
+
+// ...existing code...
 #include <stdbool.h>
 #include <stdint.h>
+
 
 // Struct definitions for the box types I'm interested in.
 // I'm not bothering with extended size boxes or additional fields, to keep
@@ -124,3 +136,5 @@ void decode_hdlr(void *map, const struct BaseBox box);
 char *translate_timestamp(const uint32_t timestamp);
 
 void unknown_box_type(void *map, const struct BaseBox box);
+
+#endif // MP4_H
