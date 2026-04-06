@@ -61,7 +61,15 @@ void analyze_missing_boxes(const char *target_filename, const char *reference_fi
         printf("  %s\n", ref_boxes[i].path);
     }
 
-    // Compare and print missing boxes (by path)
+
+    // List of box types that are static (can be copied directly)
+    const char *static_boxes[] = {"ftyp", "mvhd", "tkhd", "mdhd", "hdlr", "minf", "vmhd", "dinf", "smhd", "stsd", "stsc", "stsz", "stco", "stbl", "udta", "SDLN", "smrd", "smta"};
+    int num_static = sizeof(static_boxes) / sizeof(static_boxes[0]);
+
+    // List of box types that are dynamic (need estimation)
+    const char *dynamic_boxes[] = {"stts", "stss", "mdat"};
+    int num_dynamic = sizeof(dynamic_boxes) / sizeof(dynamic_boxes[0]);
+
     printf("\nBoxes present in %s but missing from %s:\n", target_filename, reference_filename);
     for (int i = 0; i < target_count; ++i) {
         int found = 0;
@@ -72,7 +80,22 @@ void analyze_missing_boxes(const char *target_filename, const char *reference_fi
             }
         }
         if (!found) {
-            printf("  %s\n", target_boxes[i].path);
+            // Determine classification
+            const char *type = target_boxes[i].type;
+            const char *class = "unknown";
+            for (int k = 0; k < num_static; ++k) {
+                if (strncmp(type, static_boxes[k], 4) == 0) {
+                    class = "copy";
+                    break;
+                }
+            }
+            for (int k = 0; k < num_dynamic; ++k) {
+                if (strncmp(type, dynamic_boxes[k], 4) == 0) {
+                    class = "estimate";
+                    break;
+                }
+            }
+            printf("  %s [%s]\n", target_boxes[i].path, class);
         }
     }
 
