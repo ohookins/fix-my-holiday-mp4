@@ -124,19 +124,13 @@ void analyze_missing_boxes(const char *target_filename, const char *reference_fi
                 }
             }
             printf("  %s [%s]", target_boxes[i].path, class);
-            // If copy, print offset and size in reference file
+            // For copy, print size from the good file (target)
             if (strcmp(class, "copy") == 0) {
-                // Find in reference file
-                for (int j = 0; j < ref_count; ++j) {
-                    if (strcmp(target_boxes[i].path, ref_boxes[j].path) == 0) {
-                        printf(" (size: %d)", ref_boxes[j].size);
-                        // Print interpreted metadata for known types
-                        const void *data = (const unsigned char *)ref_map + ref_boxes[j].offset + 8; // skip box header
-                        int datasz = ref_boxes[j].size - 8;
-                        print_box_metadata(ref_boxes[j].type, data, datasz);
-                        break;
-                    }
-                }
+                printf(" (size: %d)", target_boxes[i].size);
+                // Print interpreted metadata for known types
+                const void *data = (const unsigned char *)target_map + target_boxes[i].offset + 8; // skip box header
+                int datasz = target_boxes[i].size - 8;
+                print_box_metadata(target_boxes[i].type, data, datasz);
             } else if (strcmp(class, "container") == 0) {
                 // Print container info (no offset/size)
             }
