@@ -5,6 +5,7 @@
 #include "mp4.h"
 #include "compare.h"
 #include <string.h>
+#include "fix.h"
 
 void usage()
 {
@@ -81,8 +82,7 @@ int main(const int argc, char **argv)
             usage();
             return 1;
         }
-        printf("[STUB] Fix mode: would fix %s using %s and write to %s\n", filename, compare_file, output_file);
-        // TODO: Implement fix logic
+        fix_broken_mp4(filename, compare_file, output_file);
     }
     else
     {
