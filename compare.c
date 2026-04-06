@@ -1,19 +1,36 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <stdint.h>
 #include "compare.h"
-#include "file.h"
 #include "mp4.h"
+#include "file.h"
 
-
-
-#define MAX_BOXES 256
-typedef struct { char path[128]; char type[4]; } BoxPath;
+// Helper: print interpreted metadata for known box types
+static void print_box_metadata(const char *type, const void *data, int size) {
+    if (strncmp(type, "mvhd", 4) == 0 && size >= sizeof(struct MvhdBox)) {
+        const struct MvhdBox *mvhd = (const struct MvhdBox *)data;
+        printf(" version: %u, timescale: %u, duration: %u", mvhd->version, ntohl(mvhd->timescale), ntohl(mvhd->duration));
+    } else if (strncmp(type, "tkhd", 4) == 0 && size >= sizeof(struct TkhdBox)) {
+        const struct TkhdBox *tkhd = (const struct TkhdBox *)data;
+        printf(" version: %u, track_id: %u, duration: %u", tkhd->version, ntohl(tkhd->track_id), ntohl(tkhd->duration));
+    } else if (strncmp(type, "mdhd", 4) == 0 && size >= sizeof(struct MdhdBox)) {
+        const struct MdhdBox *mdhd = (const struct MdhdBox *)data;
+        printf(" version: %u, timescale: %u, duration: %u", mdhd->version, ntohl(mdhd->timescale), ntohl(mdhd->duration));
+    } else if (strncmp(type, "hdlr", 4) == 0 && size >= sizeof(struct HdlrBox)) {
+        const struct HdlrBox *hdlr = (const struct HdlrBox *)data;
+        printf(" handler: %.4s", hdlr->handler_type);
+    } else if (strncmp(type, "ftyp", 4) == 0 && size >= 16) {
+        printf(" major brand: %.4s", (const char *)data + 8);
+    }
+}
 
 // Recursively collect all boxes (with hierarchy path)
 static int collect_boxes(const void *map, int filesize, BoxPath *out_boxes, int max_boxes, const char *parent_path) {
     int count = 0;
+    int offset = 0;
     void *current = (void *)map;
     void *end = (void *)(map + filesize);
     while (current < end && count < max_boxes) {
@@ -27,6 +44,8 @@ static int collect_boxes(const void *map, int filesize, BoxPath *out_boxes, int 
             snprintf(path, sizeof(path), "%.4s", box.type);
         memcpy(out_boxes[count].path, path, sizeof(out_boxes[count].path));
         memcpy(out_boxes[count].type, box.type, 4);
+        out_boxes[count].offset = (int)((char *)current - (char *)map);
+        out_boxes[count].size = size;
         count++;
         // If this is a known container box, recurse
         if (strncmp(box.type, "moov", 4) == 0 || strncmp(box.type, "trak", 4) == 0 ||
@@ -61,7 +80,6 @@ void analyze_missing_boxes(const char *target_filename, const char *reference_fi
         printf("  %s\n", ref_boxes[i].path);
     }
 
-
     // List of box types that are static (can be copied directly)
     const char *static_boxes[] = {"ftyp", "mvhd", "tkhd", "mdhd", "hdlr", "minf", "vmhd", "dinf", "smhd", "stsd", "stsc", "stsz", "stco", "stbl", "udta", "SDLN", "smrd", "smta"};
     int num_static = sizeof(static_boxes) / sizeof(static_boxes[0]);
@@ -69,6 +87,10 @@ void analyze_missing_boxes(const char *target_filename, const char *reference_fi
     // List of box types that are dynamic (need estimation)
     const char *dynamic_boxes[] = {"stts", "stss", "mdat"};
     int num_dynamic = sizeof(dynamic_boxes) / sizeof(dynamic_boxes[0]);
+
+    // List of known container boxes
+    const char *container_boxes[] = {"moov", "trak", "mdia", "minf", "stbl", "udta"};
+    int num_container = sizeof(container_boxes) / sizeof(container_boxes[0]);
 
     printf("\nBoxes present in %s but missing from %s:\n", target_filename, reference_filename);
     for (int i = 0; i < target_count; ++i) {
@@ -95,7 +117,30 @@ void analyze_missing_boxes(const char *target_filename, const char *reference_fi
                     break;
                 }
             }
-            printf("  %s [%s]\n", target_boxes[i].path, class);
+            for (int k = 0; k < num_container; ++k) {
+                if (strncmp(type, container_boxes[k], 4) == 0) {
+                    class = "container";
+                    break;
+                }
+            }
+            printf("  %s [%s]", target_boxes[i].path, class);
+            // If copy, print offset and size in reference file
+            if (strcmp(class, "copy") == 0) {
+                // Find in reference file
+                for (int j = 0; j < ref_count; ++j) {
+                    if (strcmp(target_boxes[i].path, ref_boxes[j].path) == 0) {
+                        printf(" (size: %d)", ref_boxes[j].size);
+                        // Print interpreted metadata for known types
+                        const void *data = (const unsigned char *)ref_map + ref_boxes[j].offset + 8; // skip box header
+                        int datasz = ref_boxes[j].size - 8;
+                        print_box_metadata(ref_boxes[j].type, data, datasz);
+                        break;
+                    }
+                }
+            } else if (strcmp(class, "container") == 0) {
+                // Print container info (no offset/size)
+            }
+            printf("\n");
         }
     }
 
