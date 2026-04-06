@@ -3,6 +3,7 @@
 
 #include "file.h"
 #include "mp4.h"
+#include "compare.h"
 #include <string.h>
 
 void usage()
@@ -66,12 +67,11 @@ int main(const int argc, char **argv)
     {
         if (!compare_file)
         {
-            printf("Error: -mode compare requires -c FILE parameter.\n");
+            printf("Error: -m compare requires -c FILE parameter.\n");
             usage();
             return 1;
         }
-        printf("[STUB] Compare mode: would compare %s and %s\n", filename, compare_file);
-        // TODO: Implement compare logic
+        analyze_missing_boxes(filename, compare_file);
     }
     else if (strcmp(mode, "fix") == 0)
     {
