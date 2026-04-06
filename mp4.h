@@ -1,4 +1,6 @@
+
 #include <stdbool.h>
+#include <stdint.h>
 
 // Struct definitions for the box types I'm interested in.
 // I'm not bothering with extended size boxes or additional fields, to keep
@@ -6,7 +8,7 @@
 // media files I have on hand.
 struct BaseBox
 {
-    u_int32_t size;
+    uint32_t size;
     char type[4];
 };
 
@@ -26,43 +28,43 @@ struct FtypBox
 
 struct MvhdBox
 {
-    u_int8_t version;
+    uint8_t version;
     unsigned int flags : 24;
-    u_int32_t creation_time;
-    u_int32_t mod_time;
-    u_int32_t timescale;
-    u_int32_t duration;
+    uint32_t creation_time;
+    uint32_t mod_time;
+    uint32_t timescale;
+    uint32_t duration;
     int32_t rate;
     int16_t volume;
 };
 
 struct TkhdBox
 {
-    u_int8_t version;
+    uint8_t version;
     unsigned int flags : 24;
-    u_int32_t creation_time;
-    u_int32_t mod_time;
-    u_int32_t track_id;
-    u_int32_t reserved1;
-    u_int32_t duration;
+    uint32_t creation_time;
+    uint32_t mod_time;
+    uint32_t track_id;
+    uint32_t reserved1;
+    uint32_t duration;
     int32_t reserved2[2];
     int16_t layer;
     int16_t alternate_group;
     int16_t volume;
-    u_int16_t reserved3;
+    uint16_t reserved3;
     int32_t unity_matrix[9];
-    u_int32_t width;
-    u_int32_t height;
+    uint32_t width;
+    uint32_t height;
 };
 
 struct MdhdBox
 {
-    u_int8_t version;
+    uint8_t version;
     unsigned int flags : 24;
-    u_int32_t creation_time;
-    u_int32_t mod_time;
-    u_int32_t timescale;
-    u_int32_t duration;
+    uint32_t creation_time;
+    uint32_t mod_time;
+    uint32_t timescale;
+    uint32_t duration;
     unsigned int padding : 1;
 
     // declares the language code for this media. See ISO 639-2/T for the set of three character
@@ -71,16 +73,16 @@ struct MdhdBox
     // unsigned int(5)[3] language; // ISO-639-2/T language code
     // I can't figure out how to make the above specification work in C so I'm leaving it for now.
     unsigned int languages : 15;
-    u_int16_t pre_defined;
+    uint16_t pre_defined;
 };
 
 struct HdlrBox
 {
-    u_int8_t version;
+    uint8_t version;
     unsigned int flags : 24;
-    u_int32_t pre_defined;
+    uint32_t pre_defined;
     char handler_type[4]; // u_int32_t in the specification but it's actually a four-character handler type code
-    u_int32_t reserved[3];
+    uint32_t reserved[3];
 
     // name is a null-terminated string of variable length, so it's not useful
     // to have as a pointer in this struct
@@ -119,6 +121,6 @@ void decode_hdlr(void *map, const struct BaseBox box);
 
 // decode a timestamp - these are in seconds since midnight, Jan 1, 1904
 // so convenient!
-char *translate_timestamp(const u_int32_t timestamp);
+char *translate_timestamp(const uint32_t timestamp);
 
 void unknown_box_type(void *map, const struct BaseBox box);

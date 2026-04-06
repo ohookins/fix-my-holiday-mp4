@@ -12,7 +12,7 @@ void usage()
 int main(const int argc, char **argv)
 {
     // Parse command-line arguments
-    char *filename;
+    char *filename = NULL;
     int ch;
 
     while ((ch = getopt(argc, argv, "f:")) != -1)

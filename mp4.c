@@ -1,15 +1,16 @@
+
 #include <stdio.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <time.h>
-
+#include <stdint.h>
 #include "mp4.h"
 
 int mp4NestingLevel = 0;
 
 // oh lord, forgive me for this global variable
-u_int32_t timescale;
+uint32_t timescale;
 
 // homebrewed function pointer
 struct PointerTableEntry *function_pointer_table;
@@ -126,7 +127,7 @@ void decode_ftyp(void *map, const struct BaseBox box)
 
     // Additional brands are from here until the end of the box.
     // Have to remove 8 for the size field itself and the type field.
-    u_int32_t remainingLength = box.size - 8 - sizeof(ftypBox);
+    uint32_t remainingLength = box.size - 8 - sizeof(ftypBox);
 
     char additionalBrands[4];
     while (remainingLength > 0)
@@ -244,9 +245,9 @@ void decode_hdlr(void *map, const struct BaseBox box)
 }
 
 // yes, I'm exceedingly lazy
-const u_int32_t seconds_1904_to_1970 = 2082844800;
+const uint32_t seconds_1904_to_1970 = 2082844800;
 
-char *translate_timestamp(const u_int32_t timestamp)
+char *translate_timestamp(const uint32_t timestamp)
 {
     time_t time = (time_t)timestamp - seconds_1904_to_1970;
     return ctime(&time);
